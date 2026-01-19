@@ -42,12 +42,12 @@ List run_mcmc_cpp(NumericMatrix Y, IntegerVector m_init, IntegerVector s_init,
     // Initialize variables
     std::vector<int> m(m_init.begin(), m_init.end());
     std::vector<int> s(s_init.begin(), s_init.end());
-    // from w_un_init to un unordered_map
+    // from w_un_init to an unordered_map
     std::unordered_map<int, double> w_un;
     for(int i = 0; i < w_un_init.size(); i++) {
         w_un[i] = w_un_init[i];
     }
-    // from q_un_init to un unordered_map of unordered_map
+    // from q_un_init to an unordered_map of unordered_map
     std::unordered_map<int, std::unordered_map<int, double>> q_un;
     int current_inner_idx = 0;
     for(int mm = 0; mm < M_init; mm++) {
@@ -57,7 +57,7 @@ List run_mcmc_cpp(NumericMatrix Y, IntegerVector m_init, IntegerVector s_init,
             current_inner_idx++;
         }
     }
-    //from sigma_init to unordered_map, not all outer have same number of inner clusters, so we need to build the map accordingly
+    // from sigma_init to unordered_map, not all outer have same number of inner clusters, so we need to build the map accordingly
     std::unordered_map<int, std::unordered_map<int, std::vector<double>>> inner_sigma;
     current_inner_idx = 0;
     for(int mm = 0; mm < M_init; mm++) {
@@ -71,7 +71,7 @@ List run_mcmc_cpp(NumericMatrix Y, IntegerVector m_init, IntegerVector s_init,
             current_inner_idx++;
         }
     }
-    //from center_init to unordered_map
+    // from center_init to unordered_map
     std::unordered_map<int, std::vector<double>> outer_center;
     for(int mm = 0; mm < M_init; mm++) {
         std::vector<double> center_vec;
@@ -87,6 +87,8 @@ List run_mcmc_cpp(NumericMatrix Y, IntegerVector m_init, IntegerVector s_init,
     // Create parameters and labels objects
     parameters params(v_init, w_init, sig_m, sig_s, mu, nu, p, attrsize, Y);
     labels lbls(s, m, inner_sigma, outer_center, w_un, q_un, M, S);
+
+    Sampler sampler(params, lbls);
 
     // Pre-allocate storage for post-burnin samples 
     NumericMatrix m_results(totiter, n);
@@ -121,7 +123,6 @@ List run_mcmc_cpp(NumericMatrix Y, IntegerVector m_init, IntegerVector s_init,
           start = std::chrono::high_resolution_clock::now();
         }
 
-            Sampler sampler(params, lbls);
             sampler.sample();
             
             
@@ -129,8 +130,8 @@ List run_mcmc_cpp(NumericMatrix Y, IntegerVector m_init, IntegerVector s_init,
             if (iter >= burnin) {
             
             for (int i = 0; i < n; i++) {
-                m_results(post_burnin_idx, i) = lbls.get_outer_allocations()[i];
-                s_results(post_burnin_idx, i) = lbls.get_inner_allocations()[i];
+                m_results(post_burnin_idx, i) = lbls.get_outer_allocations()[i] + 1;
+                s_results(post_burnin_idx, i) = lbls.get_inner_allocations()[i] + 1;
             }
             
             // Convert center back to matrix

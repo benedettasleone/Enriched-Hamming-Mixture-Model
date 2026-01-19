@@ -106,10 +106,12 @@ void Sampler::sample_inner_allocations() {
     int outer_cluster_idx = outer_inner_indices.first;
     int inner_cluster_idx = outer_inner_indices.second;
 
-    lbls.set_outer_allocation_at(i, outer_cluster_idx);
     lbls.set_inner_allocation_at(i, inner_cluster_idx);
+    lbls.set_outer_allocation_at(i, outer_cluster_idx);
   }
   
+  lbls.compact_all();
+
 }
 
 
@@ -340,12 +342,12 @@ void Sampler::sample_u_low() {
     freq_table[mm]++;
   }
   
-  std::vector<int> S = lbls.get_S();
+  std::vector<int> h_m = lbls.get_h_m();
   
   // Calculate sumq for each unique value
   for (const auto& [mm, n_mm] : freq_table) {
     double sum_inner_weights = 0.0;
-    for (int local_ss = 0; local_ss < S[mm]; local_ss++) {
+    for (int local_ss = 0; local_ss < h_m[mm]; local_ss++) {
       sum_inner_weights += lbls.get_inner_weights().at(mm).at(local_ss);
     }
     
@@ -372,6 +374,8 @@ void Sampler::sample_centers() {
       std::vector<double> freq(m_j, 0.0);
       std::vector<double> prob(m_j, 0.0);
       
+      if (mm < lbls.get_K()) {
+        
       for (int ms = 0; ms < h_m[mm]; ms++) {  
         
         // Count observations and frequencies for attribute j in cluster ms
@@ -395,6 +399,7 @@ void Sampler::sample_centers() {
         
       }
 
+    }
 
       // Numerical stability: subtract max and exp
       double max_val = *std::max_element(prob.begin(), prob.end());
@@ -431,7 +436,7 @@ void Sampler::sample_sigmas() {
   std::vector<int> S = lbls.get_S();
   int total_S = std::accumulate(S.begin(), S.end(), 0);
   
-  std::unordered_map<int, std::unordered_map<int, std::vector<double>>> inner_sigma; // chiave esterna: outer cluster, chiave interna: inner cluster locale, valore: vettore di sigma per ogni dimensione
+  std::unordered_map<int, std::unordered_map<int, std::vector<double>>> inner_sigma; // outer key: outer cluster, inner key: local inner cluster, value: vector of sigma for each dimension
   NumericMatrix new_v(params.d, total_S);
   NumericMatrix new_w(params.d, total_S);
 
@@ -514,13 +519,22 @@ void Sampler::sample_sigmas() {
 
 
 void Sampler::sample() {
+  //Rcout << "Debug 0" << std::endl;
   sample_inner_allocations();
+  //Rcout << "Debug 1" << std::endl;
   sample_u_up();
+  //Rcout << "Debug 2" << std::endl;
   sample_M();
+  //Rcout << "Debug 3" << std::endl;
   sample_outer_weights();
+  //Rcout << "Debug 4" << std::endl;
   sample_centers();
+  //Rcout << "Debug 5" << std::endl;
   sample_u_low();
+  //Rcout << "Debug 6" << std::endl;
   sample_S();
+  //Rcout << "Debug 7" << std::endl;
   sample_inner_weights();
+  //Rcout << "Debug 8" << std::endl;
   sample_sigmas();
 }

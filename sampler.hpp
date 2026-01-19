@@ -9,8 +9,8 @@ class Sampler {
     private:
         const parameters& params;
         labels& lbls;
-        double u_up; // variabile ausiliaria per il campionamento di M
-        NumericVector u_low; // variabile ausiliaria per il campionamento di S
+        double u_up; // auxiliary variable for sampling M
+        NumericVector u_low; // auxiliary variable for sampling S
 
         RNGScope rngScope; // Initialize RNG once for the Sampler instance
 

@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <vector>
 #include <set>
+#include <map>
 #include <algorithm>
 
 class labels {
@@ -11,19 +12,19 @@ private:
     std::vector<int> inner_allocations;
     std::vector<int> outer_allocations;
 
-    std::unordered_map<int, std::unordered_map<int, std::vector<double>>> inner_sigma; // chiave esterna: outer cluster, 
-    //chiave interna: inner cluster locale, valore: vettore di sigma per ogni dimensione
-    std::unordered_map<int, std::vector<double>> outer_center; // chiave: outer cluster, valore: vettore di centri per ogni variabile
+    std::unordered_map<int, std::unordered_map<int, std::vector<double>>> inner_sigma; // outer key: outer cluster, 
+    // inner key: local inner cluster, value: vector of sigma for each dimension
+    std::unordered_map<int, std::vector<double>> outer_center; // key: outer cluster, value: vector of centers for each variable
 
-    std::unordered_map<int, double> outer_weights; // chiave: outer cluster, valore: peso w_un
-    std::unordered_map<int, std::unordered_map<int, double>> inner_weights; // chiave esterna: outer cluster, chiave interna: inner cluster locale, valore: peso q_un
+    std::unordered_map<int, double> outer_weights; // key: outer cluster, value: weight w_un
+    std::unordered_map<int, std::unordered_map<int, double>> inner_weights; // outer key: outer cluster, inner key: local inner cluster, value: weight q_un
 
-    int M = 0; // Numero di cluster outer totali
-    int K = 0; // Numero di cluster outer allocati
-    std::vector<int> h_m; // Numero di cluster inner allocati per ogni outer cluster 
-    std::vector<int> S; // Numero di cluster inner totali per ogni outer cluster
+    int M = 0; // Number of total outer clusters
+    int K = 0; // Number of allocated outer clusters
+    std::vector<int> h_m; // Number of allocated inner clusters for each outer cluster 
+    std::vector<int> S; // Number of total inner clusters for each outer cluster
 
-    void compact_allocations(const int empty_index, bool inner = true, const int outer_index = -1); // Funzione privata per compattare le allocazioni
+    void compact_allocations(const int empty_index, bool inner = true, const int outer_index = -1); // Private function to compact allocations
 
 public:
     // Default constructor
@@ -51,15 +52,18 @@ public:
         K = unique_m.size();
 
         h_m.resize(M, 0);
+        for (int mm = 0; mm < M; mm++) {
+        std::set<int> unique_inner_for_mm;
         for (int i = 0; i < inner_allocations.size(); i++) {
-            int mm = outer_allocations[i];
-            int ss = inner_allocations[i];
-            // Aggiorna il massimo visto per questo outer cluster
-            if (ss + 1 > h_m[mm]) {
-                h_m[mm] = ss + 1;
+            if (outer_allocations[i] == mm) {
+                unique_inner_for_mm.insert(inner_allocations[i]);
             }
-        }   
+        }
+        h_m[mm] = unique_inner_for_mm.size();  
+    }  
     }
+
+    void compact_all();
 
     // ========== Getters ==========
     const std::vector<int>& get_inner_allocations() const {
@@ -125,29 +129,29 @@ public:
         int outer_idx = outer_allocations.at(index);
         inner_allocations.at(index) = value;
 
-        // Check if old_inner_idx is still occupied
-        bool still_occupied = false;
-        for (size_t i = 0; i < inner_allocations.size(); i++) {
-            if (outer_allocations[i] == outer_idx && inner_allocations[i] == old_inner_idx) {
-                still_occupied = true;
-                break;
-            }
-        }
+        // // Check if old_inner_idx is still occupied
+        // bool still_occupied = false;
+        // for (size_t i = 0; i < inner_allocations.size(); i++) {
+        //     if (outer_allocations[i] == outer_idx && inner_allocations[i] == old_inner_idx) {
+        //         still_occupied = true;
+        //         break;
+        //     }
+        // }
 
-        if (!still_occupied) {
-            compact_allocations(old_inner_idx, true, outer_idx);
-        }
+        // if (!still_occupied) {
+        //     compact_allocations(old_inner_idx, true, outer_idx);
+        // }
     }
 
     void set_outer_allocation_at(int index, int value) {
         int old_outer_idx = outer_allocations.at(index);
         outer_allocations.at(index) = value;
 
-        // Check if old_outer_idx is still occupied
-        auto it = std::find(outer_allocations.begin(), outer_allocations.end(), old_outer_idx);
-        if(it == outer_allocations.end()) {
-            compact_allocations(old_outer_idx, false);
-        }
+        // // Check if old_outer_idx is still occupied
+        // auto it = std::find(outer_allocations.begin(), outer_allocations.end(), old_outer_idx);
+        // if(it == outer_allocations.end()) {
+        //     compact_allocations(old_outer_idx, false);
+        // }
     }
 
     void set_inner_sigma(const std::unordered_map<int, std::unordered_map<int, std::vector<double>>>& inner_sigma_) {
@@ -167,8 +171,13 @@ public:
     }
 
     void set_M(int M_) {
-        M = M_;
+    int old_M = M;
+    M = M_;
+
+    if (M > old_M) {
+        h_m.resize(M, 0);
     }
+}
 
     void set_h_m(const std::vector<int>& h_m_) {
         h_m = h_m_;

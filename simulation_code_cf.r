@@ -35,7 +35,7 @@ Rcpp::sourceCpp("enriched_hamming_centerfixed_class.cpp")
 # Simulation settings
 seed_set <- 1
 burnin <- 1000
-totiter <- 90000
+totiter <- 9000
 
 # Model parameters
 K <- 3          # outer clusters
@@ -174,7 +174,6 @@ save_results <- function(post_burnin_chain, output_dir) {
   
   # Save RDS files
   saveRDS(post_burnin_chain$center, file.path(output_dir, "centers.rds"))
-  saveRDS(post_burnin_chain$zeta, file.path(output_dir, "zeta.rds"))
   saveRDS(post_burnin_chain$sigma, file.path(output_dir, "sigmas.rds"))
   saveRDS(post_burnin_chain$S, file.path(output_dir, "S.rds"))
   saveRDS(post_burnin_chain$S_m, file.path(output_dir, "S_m.rds"))
