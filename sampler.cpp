@@ -1,7 +1,7 @@
 #include "sampler.hpp"
 #include "hyperg.hpp"
 
-
+// compute kernel matrix for all observations and all inner clusters, used in sample_inner_allocations
 NumericMatrix Sampler::kernel_hamming_rcpp_matrix(NumericMatrix y, std::unordered_map<int, std::vector<double>> center, std::unordered_map<int, std::unordered_map<int, std::vector<double>>> sigma, IntegerVector attrsize, int d, int total_S, std::map<int, std::pair<int, int>> inner_allocation_mapping) {
   int n = y.nrow();
   NumericMatrix out(n, total_S);
@@ -32,7 +32,8 @@ void Sampler::sample_inner_allocations() {
   std::vector<int> S = lbls.get_S();
   int total_S = std::accumulate(S.begin(), S.end(), 0);
   
-  //now inner allocation count starts from 0 for each outer cluster, so we need to map it back. I do it here so it's done only once. inner allocation_mapping should tell me for each global inner cluster index which outer cluster and inner cluster is, cause I need for each inner cluster its outer cluster and it's index within that outer cluster
+  //now inner allocation count starts from 0 for each outer cluster, so we need to map it back. I do it here so it's done only once. inner allocation_mapping should tell me for each global inner cluster index 
+  //which outer cluster and inner cluster is, cause I need for each inner cluster its outer cluster and it's index within that outer cluster
   std::map<int, std::pair<int, int>> inner_allocation_mapping; // key: global inner cluster index, value: (outer cluster index, inner cluster index within outer cluster)
   int inner_cluster_idx = 0;
   for (int mm = 0; mm < lbls.get_M(); mm++) {
@@ -110,16 +111,17 @@ void Sampler::sample_inner_allocations() {
     lbls.set_outer_allocation_at(i, outer_cluster_idx);
   }
   
+  //compact allocations to ensure contiguity and remove empty clusters
   lbls.compact_all();
 
 }
 
-
+//helper function
 double Sampler::phi_dir(double sig) {
   return std::pow(this->u_up + 1.0, -sig);
 }
 
-
+//helper function used in sample_M and sample_S
 double Sampler::fast_log_factorial(int x, const std::vector<double>& precomputed_log_factorial) {
   if (x < precomputed_log_factorial.size()) {
     return precomputed_log_factorial[x];
@@ -139,7 +141,7 @@ void Sampler::sample_M() {
   // Pre-calculate common terms
   double log_phi_mu = std::log(phi_dir(params.sig_m) * params.mu);
   
-  // Calculate log probabilities with optimizations
+  // Calculate log probabilities 
   double max_prob = -INFINITY;
   for (int i = 0; i < n_prb; i++) {
     int xi = i;
@@ -227,7 +229,7 @@ void Sampler::sample_S() {
   lbls.set_S(result);  
 }
 
-
+//main structure used both in sample_outer_weights and in sample_inner_weights
 std::unordered_map<int, double> Sampler::sample_weights(int ncls, const std::vector<int>& alloc, double u, double sig) {
   
   //get unique clusters
@@ -257,7 +259,7 @@ std::unordered_map<int, double> Sampler::sample_weights(int ncls, const std::vec
     n_vec.push_back(0.0);
   }
   
-  // Sample from gamma distribution: rgamma(length(n), n + sig, 1 + u)
+  // Sample from gamma distribution
   int n_length = n_vec.size();
   std::unordered_map<int, double> weights;
 
@@ -307,7 +309,7 @@ void Sampler::sample_inner_weights(){
 
       
     } else {
-      // Sample from gamma distribution: rgamma(S[mm], sig, 1)
+      // Sample from gamma distribution
       
       for (int i = 0; i < S[mm]; i++) {
         q_un[mm][i] = Rcpp::rgamma(1, params.sig_s, 1.0)[0];
@@ -351,7 +353,7 @@ void Sampler::sample_u_low() {
       sum_inner_weights += lbls.get_inner_weights().at(mm).at(local_ss);
     }
     
-    // Sample u_low[mm] from Gamma(n_mm, 1/sum_inner_weights)
+    // Sample u_low[mm] from gamma distribution
     u_low[mm] = R::rgamma(n_mm, 1.0 / sum_inner_weights);
   }
 }

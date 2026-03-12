@@ -13,7 +13,7 @@ private:
     std::vector<int> outer_allocations;
 
     std::unordered_map<int, std::unordered_map<int, std::vector<double>>> inner_sigma; // outer key: outer cluster, 
-    // inner key: local inner cluster, value: vector of sigma for each dimension
+    // inner key: local inner cluster, value: vector of sigma for each variable
     std::unordered_map<int, std::vector<double>> outer_center; // key: outer cluster, value: vector of centers for each variable
 
     std::unordered_map<int, double> outer_weights; // key: outer cluster, value: weight w_un

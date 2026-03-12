@@ -1,6 +1,8 @@
 #include "labels.hpp"
 #include <Rcpp.h>
 
+
+//function not used, now is used compact_all 
 void labels::compact_allocations(const int empty_index, bool inner, const int outer_index) {
     
     if (inner) {
@@ -137,6 +139,7 @@ void labels::compact_allocations(const int empty_index, bool inner, const int ou
     }
 }
 
+//used in sampler
 void labels::compact_all() {
     // ========== PART 1: Compact INNER clusters for each outer ==========
     
@@ -154,7 +157,7 @@ void labels::compact_all() {
             continue;
         }
         
-        // Create mapping: old_idx → consecutive new_idx (only for allocated clusters)
+        // Create mapping: old_idx → new_idx (only for allocated clusters)
         std::map<int, int> old_to_new;
         int new_idx = 0;
         for (int old_idx : allocated_inner) {
@@ -171,7 +174,7 @@ void labels::compact_all() {
             }
         }
         
-        // *** CRITICAL: Reorganize inner_sigma maintaining ALL entries 0..S[mm]-1 ***
+        // Reorganize inner_sigma having contigous entries from 0 to S[mm]-1, with allocated clusters first and then unallocated (if any)
         if (mm < S.size() && inner_sigma.find(mm) != inner_sigma.end()) {
             auto new_inner_sigma_mm = std::unordered_map<int, std::vector<double>>();
             
@@ -198,7 +201,7 @@ void labels::compact_all() {
                 }
             }
             
-            // Ensure ALL entries from 0 to S[mm]-1 exist
+            // Ensure all entries from 0 to S[mm]-1 exist
             for (int ss = 0; ss < S[mm]; ss++) {
                 if (new_inner_sigma_mm.find(ss) == new_inner_sigma_mm.end()) {
                     int d = inner_sigma[mm].begin()->second.size();
@@ -209,7 +212,6 @@ void labels::compact_all() {
             inner_sigma[mm] = std::move(new_inner_sigma_mm);
         }
         
-        // inner_weights: NO need to reorganize, sample_inner_weights recreates them all
     }
     
     // ========== PART 2: Compact OUTER clusters ==========

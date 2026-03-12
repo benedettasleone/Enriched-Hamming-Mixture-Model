@@ -16,7 +16,7 @@ struct parameters {
     IntegerVector attrsize; // sizes of categorical variables
     NumericMatrix data; // data matrix
 
-    std::vector<double> precomputed_log_factorial; // Precomputed log factorials for efficiency
+    std::vector<double> precomputed_log_factorial; // Precomputed log factorials for efficiency in sample_M and sample_S
     
     int n_probs_poisson = 1000; // Predefined size for Poisson probabilities
 
